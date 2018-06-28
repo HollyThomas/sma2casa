@@ -818,21 +818,27 @@ for band in bandList:
                 for key in keyList:
                     spBigDict[(band, key[0][1])] = key[1]
             else:
-                if band < 49:
+                # Here we check if we have a ASIC only setup
+                if band < 49 and len(bandList)>5: 
                     if sb == 0:
                         lowestFSky = spSmallDict[band][2] - spSmallDict[band][1]*0.5 - 52.0e6
                     else:
                         lowestFSky = spSmallDict[band][2] + spSmallDict[band][1]*0.5 - 52.0e6
+                # or ASIC + SWARM setup
                 elif band in sWARMForwardChunks:
                     if sb == 0:
                         lowestFSky = spSmallDict[band][2] - spSmallDict[band][1]*0.5 + spSmallDict[band][1]*spSmallDict[band][0]*0.5
                     else:
                         lowestFSky = spSmallDict[band][2] + spSmallDict[band][1]*0.5 - spSmallDict[band][1]*spSmallDict[band][0]*0.5
+                # or finally, it "must" be a SWARM only setup (perhaps be explicit here?)
                 else:
-                    if sb == 0:
-                        lowestFSky = spSmallDict[band][2] - spSmallDict[band][1]*0.5 - spSmallDict[band][1]*spSmallDict[band][0]*0.5
-                    else:
-                        lowestFSky = spSmallDict[band][2] + spSmallDict[band][1]*0.5 + spSmallDict[band][1]*spSmallDict[band][0]*0.5
+                    # initially I am leaving these as two different lines, but as 
+                    # can be seen, they are identical. Not sure if this is correct 
+                    # for both LSB and USB. 
+                    if sb == 0: # Lower Sideband
+                        lowestFSky = spSmallDict[band][2] - abs(spSmallDict[band][1])*0.5 *(1 + spSmallDict[band][0])
+                    else: # Upper Sideband
+                        lowestFSky = spSmallDict[band][2] - abs(spSmallDict[band][1])*0.5 *(1 + spSmallDict[band][0])
 
             ###
             ### Make the Primary HDU
@@ -843,10 +849,13 @@ for band in bandList:
             header['groups'] = True
             header['gcount'] = 0
             header['pcount'] = 0
+            # is it ASIC + SWARM setup = Hybrid
             if (band == 0) and ((49 in bandList) or (50 in bandList) or (51 in bandList) or (52 in bandList)):
                 header['correlat'] = 'SMA-Hybrid'
-            elif band < 49:
+            # here, once again we check if it is ASIC only
+            elif band < 49 and len(bandList)>5:
                 header['correlat'] = 'SMA-Legacy'
+            # or is it SWARM only.
             else:
                 header['correlat'] = 'SMA-SWARM'
             header['fxcorver'] = 1
